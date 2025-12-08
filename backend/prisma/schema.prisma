@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  DOCTOR
+  HOSPITAL_ADMIN
+  CASE_MANAGER
+  ADMIN
+}
+
+enum LeadStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?  // Nullable if auth via OTP/Social only
+  phone     String?  @unique
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  leads     Lead[]
+  quotes    Quote[]
+  medicalRecords MedicalRecord[]
+}
+
+model Hospital {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  address     String
+  city        String
+  state       String
+  pincode     String
+  phone       String
+  email       String
+  rating      Float    @default(0)
+  isVerified  Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  image       String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  doctors     Doctor[]
+  packages    Package[]
+  leads       Lead[]
+  quotes      Quote[]
+}
+
+model Doctor {
+  id          String   @id @default(uuid())
+  name        String
+  specialty   String
+  qualification String
+  experience  Int      // Years
+  rating      Float    @default(0)
+  image       String?
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  leads       Lead[]
+}
+
+model Package {
+  id          String   @id @default(uuid())
+  name        String   // e.g. "Total Knee Replacement"
+  description String?
+  priceMin    Float
+  priceMax    Float
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  inclusions  String[]
+  exclusions  String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       Lead[]
+}
+
+model Lead {
+  id          String     @id @default(uuid())
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id])
+  hospitalId  String?
+  hospital    Hospital?  @relation(fields: [hospitalId], references: [id])
+  doctorId    String?
+  doctor      Doctor?    @relation(fields: [doctorId], references: [id])
+  packageId   String?
+  package     Package?   @relation(fields: [packageId], references: [id])
+  
+  patientName String
+  patientPhone String
+  symptoms    String?
+  treatmentType String? // If checking generic cost
+  
+  status      LeadStatus @default(PENDING)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  quotes      Quote[]
+}
+
+model Quote {
+  id          String   @id @default(uuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  
+  amount      Float
+  details     String
+  validUntil  DateTime?
+  
+  userId      String?  // The hospital admin who sent this
+  user        User?    @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MedicalRecord {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  fileUrl     String
+  fileType    String   // e.g. "report", "prescription"
+  summary     String?  // AI generated summary
+  riskAssessment String? // AI risk output
+  
+  createdAt   DateTime @default(now())
+}
