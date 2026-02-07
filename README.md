@@ -1,4 +1,4 @@
-# HealthEase
+ii# HealthEase
 
 "Policybazaar for Healthcare" - India-first MVP.
 Compare costs, book doctors, upload reports, and get empathetic AI guidance.
@@ -44,4 +44,4 @@ Compare costs, book doctors, upload reports, and get empathetic AI guidance.
   ```bash
   cd backend
   npm run seed
-  ```
+  ``
